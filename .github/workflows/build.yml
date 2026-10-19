@@ -1,0 +1,20 @@
+name: Build plugin
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --config Release --target AndYouRevTrem_VST3 --parallel
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AndYouRevTrem-${{ matrix.os }}
+          path: build/AndYouRevTrem_artefacts/Release/VST3/
