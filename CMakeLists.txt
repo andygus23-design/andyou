@@ -13,12 +13,17 @@ FetchContent_Declare(JUCE
     GIT_SHALLOW TRUE)
 FetchContent_MakeAvailable(JUCE)
 
+juce_add_binary_data(BinaryData
+    SOURCES
+        BinaryData/pedal_bg.png
+        BinaryData/knob_masked.png)
+
 juce_add_plugin(AndYouRevTrem
-    COMPANY_NAME "AndYou"
+    COMPANY_NAME "TEILE / AndYou"
     PLUGIN_MANUFACTURER_CODE Andy
     PLUGIN_CODE Rtrm
     FORMATS VST3 Standalone
-    PRODUCT_NAME "AndYou RevTrem"
+    PRODUCT_NAME "Teil2 Revolo"
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE
     NEEDS_MIDI_OUTPUT FALSE
@@ -26,7 +31,10 @@ juce_add_plugin(AndYouRevTrem
 
 target_sources(AndYouRevTrem PRIVATE
     Source/PluginProcessor.cpp
-    Source/PluginProcessor.h)
+    Source/PluginProcessor.h
+    Source/PluginEditor.cpp
+    Source/PluginEditor.h
+    Source/TeilLookAndFeel.h)
 
 target_compile_definitions(AndYouRevTrem PUBLIC
     JUCE_WEB_BROWSER=0
@@ -35,8 +43,11 @@ target_compile_definitions(AndYouRevTrem PUBLIC
 
 target_link_libraries(AndYouRevTrem
     PRIVATE
+        BinaryData
         juce::juce_audio_utils
         juce::juce_dsp
+        juce::juce_gui_basics
+        juce::juce_gui_extra
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags
@@ -44,9 +55,14 @@ target_link_libraries(AndYouRevTrem
 
 if (REVTREM_BUILD_TESTS)
     juce_add_console_app(DspTest PRODUCT_NAME "DspTest")
-    target_sources(DspTest PRIVATE Tests/DspTest.cpp Source/PluginProcessor.cpp)
+    target_sources(DspTest PRIVATE Tests/DspTest.cpp Source/PluginProcessor.cpp Source/PluginEditor.cpp)
     target_compile_definitions(DspTest PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
     target_include_directories(DspTest PRIVATE Source)
-    target_link_libraries(DspTest PRIVATE juce::juce_audio_utils juce::juce_dsp
+    target_link_libraries(DspTest PRIVATE
+        BinaryData
+        juce::juce_audio_utils
+        juce::juce_dsp
+        juce::juce_gui_basics
+        juce::juce_gui_extra
         PUBLIC juce::juce_recommended_config_flags)
 endif()

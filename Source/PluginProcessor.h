@@ -3,13 +3,13 @@
 #include <juce_dsp/juce_dsp.h>
 
 //==============================================================================
-//  AndYou RevTrem  -  reverb + tremolo (inspirado en el concepto "reverb -> tremolo")
+//  Teil2 Revolo / AndYou RevTrem  -  reverb + tremolo effects processor
 //
-//  Cadena de señal:
-//     in --(ON/OFF)--> [early reflections] + [reverb] <-- [ruido blanco]
+//  Signal path:
+//     in --(ON/OFF)--> [early reflections] + [reverb] <-- [white noise]
 //                                  |
-//                         [filtro low-cut] -> [tremolo] -> [Reverb level]
-//     salida = (Mix: dry + wet) o (Wet: solo wet)
+//                         [low-cut filter] -> [tremolo] -> [reverb level]
+//     out = (Mix: dry + wet) or (Wet: 100% wet for send/return)
 //==============================================================================
 class RevTremProcessor : public juce::AudioProcessor
 {
@@ -25,7 +25,7 @@ public:
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override { return true; }
 
-    const juce::String getName() const override { return "AndYou RevTrem"; }
+    const juce::String getName() const override { return "Teil2 Revolo"; }
     bool acceptsMidi() const override { return false; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
@@ -40,6 +40,14 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
+    // UI Feedback & Tap Tempo
+    float getLfoPhase() const noexcept { return currentLfoPhase.load (std::memory_order_relaxed); }
+    bool isEffectActive() const noexcept { return isEffectCurrentlyActive.load (std::memory_order_relaxed); }
+    void setTempoFromTap (float hz);
+    void setEffectOn (bool shouldBeOn);
+    bool getEffectOn() const noexcept;
+    bool isMomentaryMode() const noexcept;
+
     juce::AudioProcessorValueTreeState apvts;
 
 private:
@@ -52,22 +60,25 @@ private:
     std::array<std::vector<float>, 2> erBuffer;
     int erSize = 0, erWrite = 0;
 
-    // --- Filtro low-cut (2 etapas = 24 dB/oct), 2 canales ---
+    // --- Low-cut filter (2-stage = 24 dB/oct), 2 channels ---
     std::array<juce::dsp::StateVariableTPTFilter<float>, 2> lowCut;
     float lastCutoff = -1.f;
 
-    // --- Ruido / modulación ---
+    // --- Noise / modulation ---
     juce::Random random;
     float lfoPhase = 0.f;
 
-    // buffer de trabajo: ch0/1 = entrada y salida del reverb, ch2/3 = early reflections
+    std::atomic<float> currentLfoPhase { 0.f };
+    std::atomic<bool> isEffectCurrentlyActive { true };
+
+    // Work buffer: ch0/1 = reverb in/out, ch2/3 = early reflections
     juce::AudioBuffer<float> work;
 
     juce::SmoothedValue<float> sLevel, sFeed, sNoise, sDepth, sCharacter, sCutoff;
     double sampleRate = 44100.0;
 
     std::atomic<float> *pReverb{}, *pCharacter{}, *pLength{}, *pAir{}, *pNoise{},
-                       *pTremolo{}, *pTempo{}, *pFilter{}, *pWetMode{}, *pOn{};
+                       *pTremolo{}, *pTempo{}, *pFilter{}, *pWetMode{}, *pOn{}, *pMomentary{};
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (RevTremProcessor)
 };
