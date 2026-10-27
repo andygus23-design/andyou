@@ -42,7 +42,7 @@ public:
 
     // UI Feedback & Tap Tempo
     float getLfoPhase() const noexcept { return currentLfoPhase.load (std::memory_order_relaxed); }
-    bool isEffectActive() const noexcept { return isEffectCurrentlyActive.load (std::memory_order_relaxed); }
+    bool isEffectActive() const noexcept { return pOn != nullptr && pOn->load() > 0.5f; }
     void setTempoFromTap (float hz);
     void setEffectOn (bool shouldBeOn);
     bool getEffectOn() const noexcept;

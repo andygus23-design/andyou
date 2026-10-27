@@ -6,33 +6,18 @@
 #include <BinaryData.h>
 
 //==============================================================================
-// Custom Slide Switch (Horizontal or Vertical)
+// Custom Slide Switch (using juce::Button for native DAW attachment)
 //==============================================================================
-class SlideSwitch : public juce::Component
+class SlideSwitch : public juce::Button
 {
 public:
-    SlideSwitch (bool isVerticalSwitch) : isVertical (isVerticalSwitch) {}
-
-    void setToggled (bool state)
+    SlideSwitch (const juce::String& name, bool isVerticalSwitch)
+        : juce::Button (name), isVertical (isVerticalSwitch)
     {
-        if (toggled != state)
-        {
-            toggled = state;
-            repaint();
-            if (onToggle) onToggle (toggled);
-        }
+        setClickingTogglesState (true);
     }
 
-    bool getToggled() const noexcept { return toggled; }
-
-    std::function<void(bool)> onToggle;
-
-    void mouseDown (const juce::MouseEvent&) override
-    {
-        setToggled (! toggled);
-    }
-
-    void paint (juce::Graphics& g) override
+    void paintButton (juce::Graphics& g, bool /*isHighlighted*/, bool isButtonDown) override
     {
         auto bounds = getLocalBounds().toFloat().reduced (2.0f);
 
@@ -48,6 +33,7 @@ public:
         g.fillRoundedRectangle (track, 2.0f);
 
         // Textured black rectangular switch thumb
+        const bool toggled = getToggleState();
         juce::Rectangle<float> thumb;
         if (isVertical)
         {
@@ -66,7 +52,8 @@ public:
         g.setColour (juce::Colours::black.withAlpha (0.5f));
         g.fillRoundedRectangle (thumb.translated (0.5f, 1.0f), 2.0f);
 
-        juce::ColourGradient cg (juce::Colour (70, 75, 82), thumb.getTopLeft(),
+        juce::ColourGradient cg (isButtonDown ? juce::Colour (50, 55, 62) : juce::Colour (70, 75, 82),
+                                 thumb.getTopLeft(),
                                  juce::Colour (35, 38, 42), thumb.getBottomRight(), false);
         g.setGradientFill (cg);
         g.fillRoundedRectangle (thumb, 2.0f);
@@ -91,7 +78,6 @@ public:
 
 private:
     bool isVertical = false;
-    bool toggled = false;
 };
 
 //==============================================================================
@@ -117,7 +103,7 @@ public:
         isPressed = false;
         repaint();
         if (onStateChange) onStateChange (false);
-        if (reallyContains (e.getPosition(), true) && onClick)
+        if (getLocalBounds().contains (e.getPosition()) && onClick)
             onClick();
     }
 
@@ -195,9 +181,11 @@ private:
     // Slider attachments
     std::vector<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>> sliderAttachments;
 
-    // Slide Switches
-    SlideSwitch mixWetSwitch { false }; // Horizontal
-    SlideSwitch momOnfSwitch { true };  // Vertical
+    // Slide Switches (with native ButtonAttachment)
+    SlideSwitch mixWetSwitch { "Mix/Wet", false }; // Horizontal
+    SlideSwitch momOnfSwitch { "Mom/Onf", true };  // Vertical
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> mixWetAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> momOnfAttachment;
 
     // Footswitches
     ArcadeFootswitch engageFootswitch;
@@ -206,6 +194,9 @@ private:
     // Tap tempo tracking
     double lastTapTimeMs = 0.0;
     std::vector<double> tapIntervals;
+
+    // Local LFO animation for green LED when stopped
+    float localLfoPhase = 0.0f;
 
     void setupKnob (juce::Slider& slider, const char* paramId);
 

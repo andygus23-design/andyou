@@ -34,11 +34,12 @@ public:
                                                   .translated (cx - imgW * 0.5f * scale,
                                                                cy - imgH * 0.5f * scale);
 
-            g.drawImageTransformed (knobImage, transform, true);
+            // Important: false ensures full RGB colors & pointer line are drawn, not a flat color mask!
+            g.drawImageTransformed (knobImage, transform, false);
         }
         else
         {
-            // Procedural fallback if image is missing
+            // Procedural fallback
             const float radius = (float) juce::jmin (width, height) * 0.42f;
 
             // Drop shadow
@@ -55,17 +56,16 @@ public:
             g.setGradientFill (juce::ColourGradient (juce::Colour (70, 74, 82), cx - innerR * 0.5f, cy - innerR * 0.5f,
                                                      juce::Colour (35, 37, 42), cx + innerR, cy + innerR, false));
             g.fillEllipse (cx - innerR, cy - innerR, innerR * 2.f, innerR * 2.f);
-
-            // White pointer line
-            juce::Path p;
-            const float lineLen = innerR * 0.85f;
-            p.startNewSubPath (0.f, -innerR * 0.15f);
-            p.lineTo (0.f, -lineLen);
-
-            g.setColour (juce::Colour (225, 230, 240));
-            g.strokePath (p, juce::PathStrokeType (3.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded),
-                          juce::AffineTransform::rotation (toAngle).translated (cx, cy));
         }
+
+        // Crisp high-contrast white indicator line that rotates seamlessly
+        const float lineLen = (float) juce::jmin (width, height) * 0.32f;
+        juce::Path p;
+        p.startNewSubPath (0.f, -lineLen * 0.20f);
+        p.lineTo (0.f, -lineLen);
+        g.setColour (juce::Colour (245, 248, 255));
+        g.strokePath (p, juce::PathStrokeType (3.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded),
+                      juce::AffineTransform::rotation (toAngle).translated (cx, cy));
     }
 
 private:

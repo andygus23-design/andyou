@@ -155,7 +155,7 @@ void RevTremProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
     const float lfoInc = juce::MathConstants<float>::twoPi * pTempo->load() / (float) sampleRate;
     const bool wetOnly = pWetMode->load() > 0.5f;
 
-    // --- 1) Reverb input: audio signal (with trails preserved on bypass) + white noise + early reflections ---
+    // --- 1) Reverb input: audio signal + white noise + early reflections ---
     for (int i = 0; i < n; ++i)
     {
         const float feed  = sFeed.getNextValue();
@@ -230,12 +230,19 @@ void RevTremProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
 
 void RevTremProcessor::setTempoFromTap (float hz)
 {
+    const float clampedHz = juce::jlimit (0.2f, 40.0f, hz);
+    if (pTempo != nullptr)
+        pTempo->store (clampedHz, std::memory_order_relaxed);
+
     if (auto* p = apvts.getParameter ("tempo"))
-        p->setValueNotifyingHost (p->convertTo0to1 (juce::jlimit (0.2f, 40.0f, hz)));
+        p->setValueNotifyingHost (p->convertTo0to1 (clampedHz));
 }
 
 void RevTremProcessor::setEffectOn (bool shouldBeOn)
 {
+    if (pOn != nullptr)
+        pOn->store (shouldBeOn ? 1.0f : 0.0f, std::memory_order_relaxed);
+
     if (auto* p = apvts.getParameter ("on"))
         p->setValueNotifyingHost (shouldBeOn ? 1.0f : 0.0f);
 }

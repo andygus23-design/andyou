@@ -21,27 +21,15 @@ RevTremAudioProcessorEditor::RevTremAudioProcessorEditor (RevTremProcessor& p)
     setupKnob (tempoSlider,     "tempo");
     setupKnob (filterSlider,    "filter");
 
-    // Initialize Mix/Wet Switch (Horizontal)
-    if (auto* param = processor.apvts.getRawParameterValue ("wetmode"))
-        mixWetSwitch.setToggled (param->load() > 0.5f);
-
-    mixWetSwitch.onToggle = [this] (bool isWet)
-    {
-        if (auto* p = processor.apvts.getParameter ("wetmode"))
-            p->setValueNotifyingHost (isWet ? 1.0f : 0.0f);
-    };
+    // Initialize Mix/Wet Switch (Horizontal) with native ButtonAttachment
     addAndMakeVisible (mixWetSwitch);
+    mixWetAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (
+        processor.apvts, "wetmode", mixWetSwitch);
 
-    // Initialize Mom/Onf Switch (Vertical)
-    if (auto* param = processor.apvts.getRawParameterValue ("momentary"))
-        momOnfSwitch.setToggled (param->load() > 0.5f);
-
-    momOnfSwitch.onToggle = [this] (bool isMom)
-    {
-        if (auto* p = processor.apvts.getParameter ("momentary"))
-            p->setValueNotifyingHost (isMom ? 1.0f : 0.0f);
-    };
+    // Initialize Mom/Onf Switch (Vertical) with native ButtonAttachment
     addAndMakeVisible (momOnfSwitch);
+    momOnfAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (
+        processor.apvts, "momentary", momOnfSwitch);
 
     // Left Arcade Footswitch (Engage / Momentary)
     engageFootswitch.onStateChange = [this] (bool isPressed)
@@ -49,6 +37,7 @@ RevTremAudioProcessorEditor::RevTremAudioProcessorEditor (RevTremProcessor& p)
         if (processor.isMomentaryMode())
         {
             processor.setEffectOn (isPressed);
+            repaint (196 - 18, 449 - 18, 36, 36);
         }
     };
     engageFootswitch.onClick = [this]
@@ -56,6 +45,7 @@ RevTremAudioProcessorEditor::RevTremAudioProcessorEditor (RevTremProcessor& p)
         if (! processor.isMomentaryMode())
         {
             processor.setEffectOn (! processor.getEffectOn());
+            repaint (196 - 18, 449 - 18, 36, 36);
         }
     };
     addAndMakeVisible (engageFootswitch);
@@ -67,8 +57,7 @@ RevTremAudioProcessorEditor::RevTremAudioProcessorEditor (RevTremProcessor& p)
         if (lastTapTimeMs > 0.0)
         {
             const double deltaMs = now - lastTapTimeMs;
-            // Valid tap interval between 30 ms and 2500 ms (40 Hz down to 0.4 Hz)
-            if (deltaMs >= 25.0 && deltaMs <= 2500.0)
+            if (deltaMs >= 25.0 && deltaMs <= 3000.0)
             {
                 tapIntervals.push_back (deltaMs);
                 if (tapIntervals.size() > 4)
@@ -102,10 +91,13 @@ RevTremAudioProcessorEditor::~RevTremAudioProcessorEditor()
 
 void RevTremAudioProcessorEditor::setupKnob (juce::Slider& slider, const char* paramId)
 {
-    slider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
+    // RotaryHorizontalVerticalDrag allows dragging up/down OR left/right!
+    slider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
     slider.setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
     slider.setRotaryParameters (-2.35619f, 2.35619f, true);
     slider.setDoubleClickReturnValue (true, 0.5);
+    slider.setMouseDragSensitivity (180);
+    slider.setScrollWheelEnabled (true);
     addAndMakeVisible (slider);
 
     sliderAttachments.push_back (
@@ -163,7 +155,7 @@ void RevTremAudioProcessorEditor::paint (juce::Graphics& g)
     // 3) Green TAP Tempo LED at (723, 458)
     const float grnLedX = 723.0f;
     const float grnLedY = 458.0f;
-    const float lfoNorm = 0.5f + 0.5f * std::cos (processor.getLfoPhase());
+    const float lfoNorm = 0.5f + 0.5f * std::cos (localLfoPhase);
 
     if (lfoNorm > 0.35f)
     {
@@ -228,19 +220,13 @@ void RevTremAudioProcessorEditor::resized()
 
 void RevTremAudioProcessorEditor::timerCallback()
 {
-    // Sync switch toggles from DAW automation
-    if (auto* pWet = processor.apvts.getRawParameterValue ("wetmode"))
+    // Keep local LFO phase updated according to current tempo so LED pulses continuously
+    if (auto* pTempo = processor.apvts.getRawParameterValue ("tempo"))
     {
-        const bool w = pWet->load() > 0.5f;
-        if (mixWetSwitch.getToggled() != w)
-            mixWetSwitch.setToggled (w);
-    }
-
-    if (auto* pMom = processor.apvts.getRawParameterValue ("momentary"))
-    {
-        const bool m = pMom->load() > 0.5f;
-        if (momOnfSwitch.getToggled() != m)
-            momOnfSwitch.setToggled (m);
+        const float tempoHz = pTempo->load();
+        localLfoPhase += juce::MathConstants<float>::twoPi * tempoHz * (1.0f / 30.0f);
+        if (localLfoPhase > juce::MathConstants<float>::twoPi)
+            localLfoPhase -= juce::MathConstants<float>::twoPi;
     }
 
     // Refresh glowing LED regions
