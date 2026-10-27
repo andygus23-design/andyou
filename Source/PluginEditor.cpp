@@ -91,7 +91,6 @@ RevTremAudioProcessorEditor::~RevTremAudioProcessorEditor()
 
 void RevTremAudioProcessorEditor::setupKnob (juce::Slider& slider, const char* paramId)
 {
-    // RotaryHorizontalVerticalDrag allows dragging up/down OR left/right!
     slider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
     slider.setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
     slider.setRotaryParameters (-2.35619f, 2.35619f, true);
@@ -124,32 +123,16 @@ void RevTremAudioProcessorEditor::paint (juce::Graphics& g)
 
     if (isEngaged)
     {
-        // Glowing Neon Red Halo
-        juce::ColourGradient halo (juce::Colour (255, 30, 30).withAlpha (0.6f), redLedX, redLedY,
-                                   juce::Colour (255, 30, 30).withAlpha (0.0f), redLedX + 16.0f, redLedY + 16.0f, true);
+        // Glowing Neon Red Halo over hardware LED
+        juce::ColourGradient halo (juce::Colour (255, 30, 30).withAlpha (0.60f), redLedX, redLedY,
+                                   juce::Colour (255, 30, 30).withAlpha (0.0f), redLedX + 14.0f, redLedY + 14.0f, true);
         g.setGradientFill (halo);
-        g.fillEllipse (redLedX - 16.0f, redLedY - 16.0f, 32.0f, 32.0f);
+        g.fillEllipse (redLedX - 14.0f, redLedY - 14.0f, 28.0f, 28.0f);
 
-        // Bright LED Core
-        juce::ColourGradient core (juce::Colour (255, 160, 160), redLedX - 2.0f, redLedY - 2.0f,
-                                   juce::Colour (220, 20, 20), redLedX + 5.0f, redLedY + 5.0f, false);
+        juce::ColourGradient core (juce::Colour (255, 175, 175), redLedX - 1.5f, redLedY - 1.5f,
+                                   juce::Colour (220, 25, 25), redLedX + 4.0f, redLedY + 4.0f, false);
         g.setGradientFill (core);
-        g.fillEllipse (redLedX - 6.0f, redLedY - 6.0f, 12.0f, 12.0f);
-
-        // Specular dot
-        g.setColour (juce::Colours::white.withAlpha (0.85f));
-        g.fillEllipse (redLedX - 3.5f, redLedY - 3.5f, 3.0f, 3.0f);
-    }
-    else
-    {
-        // Dark unlit burgundy LED
-        juce::ColourGradient offCore (juce::Colour (90, 30, 35), redLedX - 2.0f, redLedY - 2.0f,
-                                      juce::Colour (40, 15, 18), redLedX + 5.0f, redLedY + 5.0f, false);
-        g.setGradientFill (offCore);
-        g.fillEllipse (redLedX - 5.5f, redLedY - 5.5f, 11.0f, 11.0f);
-
-        g.setColour (juce::Colours::white.withAlpha (0.25f));
-        g.fillEllipse (redLedX - 3.0f, redLedY - 3.0f, 2.5f, 2.5f);
+        g.fillEllipse (redLedX - 5.0f, redLedY - 5.0f, 10.0f, 10.0f);
     }
 
     // 3) Green TAP Tempo LED at (723, 458)
@@ -157,34 +140,18 @@ void RevTremAudioProcessorEditor::paint (juce::Graphics& g)
     const float grnLedY = 458.0f;
     const float lfoNorm = 0.5f + 0.5f * std::cos (localLfoPhase);
 
-    if (lfoNorm > 0.35f)
+    if (lfoNorm > 0.40f)
     {
-        const float alpha = (lfoNorm - 0.35f) / 0.65f;
-        // Neon Green Halo
+        const float alpha = (lfoNorm - 0.40f) / 0.60f;
         juce::ColourGradient halo (juce::Colour (40, 255, 120).withAlpha (0.55f * alpha), grnLedX, grnLedY,
-                                   juce::Colour (40, 255, 120).withAlpha (0.0f), grnLedX + 16.0f, grnLedY + 16.0f, true);
+                                   juce::Colour (40, 255, 120).withAlpha (0.0f), grnLedX + 14.0f, grnLedY + 14.0f, true);
         g.setGradientFill (halo);
-        g.fillEllipse (grnLedX - 16.0f, grnLedY - 16.0f, 32.0f, 32.0f);
+        g.fillEllipse (grnLedX - 14.0f, grnLedY - 14.0f, 28.0f, 28.0f);
 
-        // Glowing Green Core
-        juce::ColourGradient core (juce::Colour (180, 255, 210), grnLedX - 2.0f, grnLedY - 2.0f,
-                                   juce::Colour (20, 200, 80), grnLedX + 5.0f, grnLedY + 5.0f, false);
+        juce::ColourGradient core (juce::Colour (205, 255, 225), grnLedX - 1.5f, grnLedY - 1.5f,
+                                   juce::Colour (25, 215, 85), grnLedX + 4.0f, grnLedY + 4.0f, false);
         g.setGradientFill (core);
-        g.fillEllipse (grnLedX - 6.0f, grnLedY - 6.0f, 12.0f, 12.0f);
-
-        g.setColour (juce::Colours::white.withAlpha (0.8f * alpha));
-        g.fillEllipse (grnLedX - 3.5f, grnLedY - 3.5f, 3.0f, 3.0f);
-    }
-    else
-    {
-        // Dark unlit teal/green LED
-        juce::ColourGradient offCore (juce::Colour (30, 75, 55), grnLedX - 2.0f, grnLedY - 2.0f,
-                                      juce::Colour (15, 35, 25), grnLedX + 5.0f, grnLedY + 5.0f, false);
-        g.setGradientFill (offCore);
-        g.fillEllipse (grnLedX - 5.5f, grnLedY - 5.5f, 11.0f, 11.0f);
-
-        g.setColour (juce::Colours::white.withAlpha (0.2f));
-        g.fillEllipse (grnLedX - 3.0f, grnLedY - 3.0f, 2.5f, 2.5f);
+        g.fillEllipse (grnLedX - 5.0f, grnLedY - 5.0f, 10.0f, 10.0f);
     }
 }
 
@@ -220,7 +187,6 @@ void RevTremAudioProcessorEditor::resized()
 
 void RevTremAudioProcessorEditor::timerCallback()
 {
-    // Keep local LFO phase updated according to current tempo so LED pulses continuously
     if (auto* pTempo = processor.apvts.getRawParameterValue ("tempo"))
     {
         const float tempoHz = pTempo->load();

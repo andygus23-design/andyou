@@ -19,17 +19,17 @@ public:
 
     void paintButton (juce::Graphics& g, bool /*isHighlighted*/, bool isButtonDown) override
     {
-        auto bounds = getLocalBounds().toFloat().reduced (2.0f);
+        auto bounds = getLocalBounds().toFloat().reduced (1.0f);
 
         // Switch metal bezel / recess
-        g.setColour (juce::Colour (30, 32, 36));
+        g.setColour (juce::Colour (28, 30, 34));
         g.fillRoundedRectangle (bounds, 3.0f);
-        g.setColour (juce::Colour (100, 105, 115));
+        g.setColour (juce::Colour (95, 100, 110));
         g.drawRoundedRectangle (bounds, 3.0f, 1.2f);
 
         // Slide track
-        auto track = bounds.reduced (isVertical ? 4.0f : 2.0f, isVertical ? 2.0f : 4.0f);
-        g.setColour (juce::Colour (15, 16, 18));
+        auto track = bounds.reduced (isVertical ? 3.0f : 2.0f, isVertical ? 2.0f : 3.0f);
+        g.setColour (juce::Colour (14, 15, 17));
         g.fillRoundedRectangle (track, 2.0f);
 
         // Textured black rectangular switch thumb
@@ -49,17 +49,17 @@ public:
         }
 
         // Thumb shadow and gradient
-        g.setColour (juce::Colours::black.withAlpha (0.5f));
+        g.setColour (juce::Colours::black.withAlpha (0.45f));
         g.fillRoundedRectangle (thumb.translated (0.5f, 1.0f), 2.0f);
 
-        juce::ColourGradient cg (isButtonDown ? juce::Colour (50, 55, 62) : juce::Colour (70, 75, 82),
+        juce::ColourGradient cg (isButtonDown ? juce::Colour (48, 52, 58) : juce::Colour (68, 72, 80),
                                  thumb.getTopLeft(),
-                                 juce::Colour (35, 38, 42), thumb.getBottomRight(), false);
+                                 juce::Colour (32, 35, 40), thumb.getBottomRight(), false);
         g.setGradientFill (cg);
         g.fillRoundedRectangle (thumb, 2.0f);
 
         // Ridge lines on thumb
-        g.setColour (juce::Colour (20, 22, 25));
+        g.setColour (juce::Colour (18, 20, 24));
         if (isVertical)
         {
             const float midY = thumb.getCentreY();
@@ -109,44 +109,21 @@ public:
 
     void paint (juce::Graphics& g) override
     {
-        const float w = (float) getWidth();
-        const float h = (float) getHeight();
-        const float cx = w * 0.5f;
-        const float cy = h * 0.5f;
-        const float baseR = juce::jmin (w, h) * 0.44f;
-        const float r = isPressed ? (baseR * 0.94f) : baseR;
-
-        // Subtle drop shadow when resting, deeper inset shadow when pressed
-        if (! isPressed)
+        // Resting: Draws nothing! The authentic hardware arcade button from pedal_bg.png shows through!
+        // Pressed: Draws a subtle inner shadow overlay giving tactile physical feedback
+        if (isPressed)
         {
-            g.setColour (juce::Colours::black.withAlpha (0.45f));
-            g.fillEllipse (cx - r + 2.f, cy - r + 3.f, r * 2.f, r * 2.f);
+            const float w = (float) getWidth();
+            const float h = (float) getHeight();
+            const float cx = w * 0.5f;
+            const float cy = h * 0.5f;
+            const float r = juce::jmin (w, h) * 0.40f;
+
+            juce::ColourGradient shadow (juce::Colours::black.withAlpha (0.45f), cx, cy,
+                                         juce::Colours::black.withAlpha (0.12f), cx + r, cy + r, true);
+            g.setGradientFill (shadow);
+            g.fillEllipse (cx - r, cy - r, r * 2.0f, r * 2.0f);
         }
-
-        // Outer glossy bevel of inner plunger
-        juce::ColourGradient bevelGrad (juce::Colour (50, 54, 60), cx - r * 0.6f, cy - r * 0.6f,
-                                        juce::Colour (10, 11, 13), cx + r * 0.8f, cy + r * 0.8f, false);
-        g.setGradientFill (bevelGrad);
-        g.fillEllipse (cx - r, cy - r, r * 2.f, r * 2.f);
-
-        // Domed top face
-        const float innerR = r * 0.86f;
-        const float offsetY = isPressed ? 1.5f : 0.f;
-        juce::ColourGradient domeGrad (isPressed ? juce::Colour (35, 38, 42) : juce::Colour (65, 70, 78),
-                                       cx - innerR * 0.4f, cy - innerR * 0.5f + offsetY,
-                                       juce::Colour (18, 19, 22),
-                                       cx + innerR * 0.6f, cy + innerR * 0.7f + offsetY, false);
-        g.setGradientFill (domeGrad);
-        g.fillEllipse (cx - innerR, cy - innerR + offsetY, innerR * 2.f, innerR * 2.f);
-
-        // Specular reflection highlight curve
-        juce::Path highlight;
-        const float arcR = innerR * 0.72f;
-        highlight.addCentredArc (cx, cy + offsetY, arcR, arcR * 0.8f, 0.f,
-                                 -juce::MathConstants<float>::pi * 0.85f,
-                                 -juce::MathConstants<float>::pi * 0.15f, true);
-        g.setColour (juce::Colours::white.withAlpha (isPressed ? 0.08f : 0.22f));
-        g.strokePath (highlight, juce::PathStrokeType (3.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
     }
 
 private:

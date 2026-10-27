@@ -22,50 +22,37 @@ public:
         const float cx = (float) x + (float) width * 0.5f;
         const float cy = (float) y + (float) height * 0.5f;
 
+        // 1. Soft stationary ambient drop shadow
+        g.setColour (juce::Colours::black.withAlpha (0.40f));
+        g.fillEllipse (cx - 43.0f, cy - 40.0f, 86.0f, 86.0f);
+
+        // 2. Draw rotated authentic photographic knob (false ensures full colors & pointer line are drawn!)
         if (knobImage.isValid())
         {
             const float imgW = (float) knobImage.getWidth();
             const float imgH = (float) knobImage.getHeight();
-            const float targetSize = (float) juce::jmin (width, height);
-            const float scale = targetSize / imgW;
 
             auto transform = juce::AffineTransform::rotation (toAngle, imgW * 0.5f, imgH * 0.5f)
-                                                  .scaled (scale)
-                                                  .translated (cx - imgW * 0.5f * scale,
-                                                               cy - imgH * 0.5f * scale);
+                                                  .translated (cx - imgW * 0.5f, cy - imgH * 0.5f);
 
-            // Important: false ensures full RGB colors & pointer line are drawn, not a flat color mask!
             g.drawImageTransformed (knobImage, transform, false);
         }
         else
         {
             // Procedural fallback
-            const float radius = (float) juce::jmin (width, height) * 0.42f;
+            const float r = 42.0f;
+            juce::ColourGradient grad (juce::Colour (60, 64, 72), cx - r * 0.5f, cy - r * 0.5f,
+                                       juce::Colour (25, 27, 32), cx + r, cy + r, false);
+            g.setGradientFill (grad);
+            g.fillEllipse (cx - r, cy - r, r * 2.0f, r * 2.0f);
 
-            // Drop shadow
-            g.setColour (juce::Colours::black.withAlpha (0.4f));
-            g.fillEllipse (cx - radius + 2.f, cy - radius + 3.f, radius * 2.f, radius * 2.f);
-
-            // Outer fluted skirt
-            g.setGradientFill (juce::ColourGradient (juce::Colour (55, 58, 65), cx - radius, cy - radius,
-                                                     juce::Colour (25, 27, 30), cx + radius, cy + radius, false));
-            g.fillEllipse (cx - radius, cy - radius, radius * 2.f, radius * 2.f);
-
-            // Inner cap
-            const float innerR = radius * 0.78f;
-            g.setGradientFill (juce::ColourGradient (juce::Colour (70, 74, 82), cx - innerR * 0.5f, cy - innerR * 0.5f,
-                                                     juce::Colour (35, 37, 42), cx + innerR, cy + innerR, false));
-            g.fillEllipse (cx - innerR, cy - innerR, innerR * 2.f, innerR * 2.f);
+            juce::Path p;
+            p.startNewSubPath (0.f, -10.f);
+            p.lineTo (0.f, -38.f);
+            g.setColour (juce::Colour (245, 248, 255));
+            g.strokePath (p, juce::PathStrokeType (3.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded),
+                          juce::AffineTransform::rotation (toAngle).translated (cx, cy));
         }
-
-        // Crisp high-contrast white indicator line that rotates seamlessly
-        const float lineLen = (float) juce::jmin (width, height) * 0.32f;
-        juce::Path p;
-        p.startNewSubPath (0.f, -lineLen * 0.20f);
-        p.lineTo (0.f, -lineLen);
-        g.setColour (juce::Colour (245, 248, 255));
-        g.strokePath (p, juce::PathStrokeType (3.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded),
-                      juce::AffineTransform::rotation (toAngle).translated (cx, cy));
     }
 
 private:
